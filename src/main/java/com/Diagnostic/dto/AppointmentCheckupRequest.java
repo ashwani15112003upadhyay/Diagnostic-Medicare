@@ -1,13 +1,27 @@
 package com.Diagnostic.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 public class AppointmentCheckupRequest {
+
+    @NotNull(message = "Patient name is required")
     private String patientName;
+    @NotNull(message = "Age is required")
+    @Min(value = 0, message = "Age can not be negative")
     private int age;
+    @NotBlank(message = "Gender is required")
     private String gender;
+    @NotBlank(message = "Mobile number is required")
     private String mobile;
+
+    @NotBlank(message = "Email is required")
+    @Email
     private String email;
 
     public String getPatientName() {
@@ -74,7 +88,11 @@ public class AppointmentCheckupRequest {
         this.preferredTime = preferredTime;
     }
 
+    @NotBlank(message = "Checkup type is required ")
     private String checkupType;
+
+    @NotNull(message = "Preferred date is required")
     private LocalDate preferredDate;
+    @NotNull(message = "Preferred time is required")
     private LocalTime preferredTime;
 }

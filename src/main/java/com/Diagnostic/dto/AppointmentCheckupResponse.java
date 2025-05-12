@@ -7,6 +7,10 @@ import java.time.LocalTime;
 public class AppointmentCheckupResponse {
     private String appointmentId;
     private String patientName;
+
+    public AppointmentCheckupResponse() {
+    }
+
     private String checkupType;
 
     public String getAppointmentId() {
