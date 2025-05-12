@@ -1,4 +1,4 @@
-package com.Diagnostic;
+package com.Diagnostic.controller;
 
 import com.Diagnostic.Response.CustomResponseModel;
 import com.Diagnostic.dto.AppointmentCheckupRequest;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/appointment")
-public class Controller {
+public class AppointmentController {
 
     @Autowired
     private AppointmentService appointmentService;
