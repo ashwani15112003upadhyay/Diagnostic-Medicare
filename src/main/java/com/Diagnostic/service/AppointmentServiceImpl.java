@@ -3,6 +3,7 @@ package com.Diagnostic.service;
 import com.Diagnostic.dto.AppointmentCheckupRequest;
 import com.Diagnostic.dto.AppointmentCheckupResponse;
 import com.Diagnostic.entity.Appointment;
+import com.Diagnostic.mapper.AppointmentMapper;
 import com.Diagnostic.repository.AppointmentRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,31 +20,20 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Autowired
     private AppointmentRepository appointmentRepository;
 
+    @Autowired
+    private AppointmentMapper mapper;
+
     @Override
     public AppointmentCheckupResponse applyForCheckup(AppointmentCheckupRequest request) {
-        Appointment appointment = createAppointmentFromRequest(request);
+        Appointment appointment = mapper.toAppointment(request);
+        appointment.setAppointmentId(UUID.randomUUID().toString());
+
         boolean hasMissingFields = validateMissingFields(request);
+        appointment.setStatus(hasMissingFields ? "In Progress" : "Confirmed");
+        appointment.setRemark(hasMissingFields ? getMissingFieldMessage(request) : null);
 
-        // Set status based on missing fields
-        String status = hasMissingFields ? "In Progress" : "Confirmed";
-        appointment.setStatus(status);
-
-        // Set remark if any field is missing
-        String remark = hasMissingFields ? getMissingFieldMessage(request) : null;
-
-        // If status is "Confirmed", do not include the remark
-        if ("Confirmed".equals(status)) {
-            remark = null;  // Remove remark for confirmed status
-        }
-
-        // Set the remark in the appointment
-        appointment.setRemark(remark);
-
-        // Save appointment
         appointmentRepository.save(appointment);
-
-        // Return response
-        return mapToResponse(appointment);
+        return mapper.toResponse(appointment);
     }
 
     @Transactional
@@ -52,54 +42,45 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = getAppointmentById(appointmentId);
         appointment.setStatus("Cancelled");
 
-        // Save the cancelled status
         appointmentRepository.delete(appointment);
-        return mapToResponse(appointment);
+        return mapper.toResponse(appointment);
     }
 
     @Override
     public AppointmentCheckupResponse getAppointmentDetailsById(String appointmentId) {
         Appointment appointment = getAppointmentById(appointmentId);
-        return mapToResponse(appointment);
+        return mapper.toResponse(appointment);
     }
 
     @Override
     public AppointmentCheckupResponse updateAppointment(String appointmentId, AppointmentCheckupRequest request) {
         Appointment appointment = getAppointmentById(appointmentId);
 
-        // Update the appointment fields from the request
-        updateAppointmentFields(appointment, request);
+        mapper.updateAppointmentFromRequest(request, appointment);
 
-        // Check if all required fields are set
         boolean hasMissingFields = validateMissingFields(request);
         if (!hasMissingFields) {
-            // If no fields are missing, set the status to "Confirmed"
             appointment.setStatus("Confirmed");
-            // Clear the remark as no fields are missing
-            appointment.setRemark(null);
+            appointment.setRemark(null); // Clear remark after successful update
+        } else {
+            appointment.setStatus("In Progress");
+            appointment.setRemark(getMissingFieldMessage(request));
         }
 
-        // Save updated appointment
         appointmentRepository.save(appointment);
-        return mapToResponse(appointment);
+        return mapper.toResponse(appointment);
     }
 
-    // Helper method to create an Appointment from the request
-    private Appointment createAppointmentFromRequest(AppointmentCheckupRequest request) {
-        Appointment appointment = new Appointment();
-        appointment.setAppointmentId(UUID.randomUUID().toString());
-        appointment.setPatientName(request.getPatientName());
-        appointment.setAge(request.getAge());
-        appointment.setGender(request.getGender());
-        appointment.setMobile(request.getMobile());
-        appointment.setEmail(request.getEmail());
-        appointment.setCheckupType(request.getCheckupType());
-        appointment.setAppointmentDate(request.getPreferredDate());
-        appointment.setAppointmentTime(request.getPreferredTime());
-        return appointment;
+    // Helper: Fetch appointment
+    private Appointment getAppointmentById(String appointmentId) {
+        Optional<Appointment> optional = appointmentRepository.findByAppointmentId(appointmentId);
+        if (optional.isEmpty()) {
+            throw new RuntimeException("Appointment not found with ID: " + appointmentId);
+        }
+        return optional.get();
     }
 
-    // Helper method to validate missing fields
+    // Helper: Check for missing fields
     private boolean validateMissingFields(AppointmentCheckupRequest request) {
         return isNullOrEmpty(request.getPatientName()) ||
                 request.getAge() <= 0 ||
@@ -111,60 +92,18 @@ public class AppointmentServiceImpl implements AppointmentService {
                 request.getPreferredTime() == null;
     }
 
-    // Helper method to generate the missing field message
+    // Helper: Build missing field message
     private String getMissingFieldMessage(AppointmentCheckupRequest request) {
-        if (isNullOrEmpty(request.getPatientName())) {
-            return "Patient Name is missing";
-        } else if (request.getAge() <= 0) {
-            return "Age is missing";
-        } else if (isNullOrEmpty(request.getGender())) {
-            return "Gender is missing";
-        } else if (isNullOrEmpty(request.getMobile())) {
-            return "Mobile is missing";
-        } else if (isNullOrEmpty(request.getEmail())) {
-            return "Email is missing";
-        } else if (isNullOrEmpty(request.getCheckupType())) {
-            return "Checkup Type is missing";
-        } else if (request.getPreferredDate() == null) {
-            return "Appointment Date is missing";
-        } else if (request.getPreferredTime() == null) {
-            return "Appointment Time is missing";
-        }
-        return "Missing field(s)";
-    }
+        StringBuilder sb = new StringBuilder("Missing fields: ");
+        if (isNullOrEmpty(request.getPatientName())) sb.append("Patient Name, ");
+        if (request.getAge() <= 0) sb.append("Age, ");
+        if (isNullOrEmpty(request.getGender())) sb.append("Gender, ");
+        if (isNullOrEmpty(request.getMobile())) sb.append("Mobile, ");
+        if (isNullOrEmpty(request.getEmail())) sb.append("Email, ");
+        if (isNullOrEmpty(request.getCheckupType())) sb.append("Checkup Type, ");
+        if (request.getPreferredDate() == null) sb.append("Preferred Date, ");
+        if (request.getPreferredTime() == null) sb.append("Preferred Time, ");
 
-    // Helper method to map Appointment to AppointmentCheckupResponse
-    private AppointmentCheckupResponse mapToResponse(Appointment appointment) {
-        AppointmentCheckupResponse response = new AppointmentCheckupResponse();
-        response.setAppointmentId(appointment.getAppointmentId());
-        response.setPatientName(appointment.getPatientName());
-        response.setCheckupType(appointment.getCheckupType());
-        response.setAppointmentDate(appointment.getAppointmentDate());
-        response.setAppointmentTime(appointment.getAppointmentTime());
-        response.setStatus(appointment.getStatus());
-        response.setRemark(appointment.getRemark()); // Set the remark here
-
-        return response;
-    }
-
-    // Helper method to get Appointment by ID
-    private Appointment getAppointmentById(String appointmentId) {
-        Optional<Appointment> optional = appointmentRepository.findByAppointmentId(appointmentId);
-        if (optional.isEmpty()) {
-            throw new RuntimeException("Appointment not found with ID: " + appointmentId);
-        }
-        return optional.get();
-    }
-
-    // Helper method to update appointment fields from request
-    private void updateAppointmentFields(Appointment appointment, AppointmentCheckupRequest request) {
-        appointment.setPatientName(request.getPatientName());
-        appointment.setAge(request.getAge());
-        appointment.setGender(request.getGender());
-        appointment.setMobile(request.getMobile());
-        appointment.setEmail(request.getEmail());
-        appointment.setCheckupType(request.getCheckupType());
-        appointment.setAppointmentDate(request.getPreferredDate());
-        appointment.setAppointmentTime(request.getPreferredTime());
+        return sb.substring(0, sb.length() - 2); // remove trailing comma and space
     }
 }

@@ -6,7 +6,6 @@ public class ValidationUtil {
         return str == null || str.trim().isEmpty();
     }
 
-    // You can also add more methods like:
     public static boolean isNull(Object obj) {
         return obj == null;
     }
