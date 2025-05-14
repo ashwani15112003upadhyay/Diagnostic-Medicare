@@ -9,6 +9,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,9 +29,23 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = mapper.toAppointment(request);
         appointment.setAppointmentId(UUID.randomUUID().toString());
 
+        boolean isDateBeyond15Days = request.getPreferredDate().isAfter(LocalDate.now().plusDays(15));
+
         boolean hasMissingFields = validateMissingFields(request);
-        appointment.setStatus(hasMissingFields ? "In Progress" : "Confirmed");
-        appointment.setRemark(hasMissingFields ? getMissingFieldMessage(request) : null);
+
+//        appointment.setStatus(hasMissingFields ? "In Progress" : "Confirmed");
+//        appointment.setRemark(hasMissingFields ? getMissingFieldMessage(request) : null);
+
+        if (hasMissingFields) {
+            appointment.setStatus("In Progress");
+            appointment.setRemark(getMissingFieldMessage(request));
+        } else if (isDateBeyond15Days) {
+            appointment.setStatus("Pending");
+            appointment.setRemark("Choose date within 15 days");
+        } else {
+            appointment.setStatus("Confirmed");
+            appointment.setRemark(null);
+        }
 
         appointmentRepository.save(appointment);
         return mapper.toResponse(appointment);

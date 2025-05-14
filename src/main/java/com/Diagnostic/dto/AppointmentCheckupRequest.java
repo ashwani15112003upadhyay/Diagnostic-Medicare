@@ -1,5 +1,6 @@
 package com.Diagnostic.dto;
 
+import com.Diagnostic.utility.NotPastDate;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -92,6 +93,7 @@ public class AppointmentCheckupRequest {
     private String checkupType;
 
     @NotNull(message = "Preferred date is required")
+    @NotPastDate
     private LocalDate preferredDate;
     @NotNull(message = "Preferred time is required")
     private LocalTime preferredTime;
