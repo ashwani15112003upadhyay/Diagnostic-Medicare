@@ -64,4 +64,5 @@ public class AppointmentCheckupResponse {
     private LocalDate appointmentDate;
     private LocalTime appointmentTime;
     private String status;
+
 }
