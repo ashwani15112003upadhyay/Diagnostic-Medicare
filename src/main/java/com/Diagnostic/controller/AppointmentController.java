@@ -4,6 +4,7 @@ import com.Diagnostic.Response.CustomResponseModel;
 import com.Diagnostic.dto.AppointmentCheckupRequest;
 import com.Diagnostic.dto.AppointmentCheckupResponse;
 import com.Diagnostic.service.AppointmentService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class AppointmentController {
 
     @PostMapping("")
     public ResponseEntity<CustomResponseModel<AppointmentCheckupResponse>> apply(
-            @RequestBody AppointmentCheckupRequest request) {
+            @Valid @RequestBody AppointmentCheckupRequest request) {
         try {
             AppointmentCheckupResponse response = appointmentService.applyForCheckup(request);
             CustomResponseModel<AppointmentCheckupResponse> customResponse = new CustomResponseModel<>(
