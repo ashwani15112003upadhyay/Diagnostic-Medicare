@@ -64,5 +64,14 @@ public class AppointmentCheckupResponse {
     private LocalDate appointmentDate;
     private LocalTime appointmentTime;
     private String status;
+    private String remark;
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
 
 }

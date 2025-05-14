@@ -23,10 +23,26 @@ public class AppointmentServiceImpl implements AppointmentService {
     public AppointmentCheckupResponse applyForCheckup(AppointmentCheckupRequest request) {
         Appointment appointment = createAppointmentFromRequest(request);
         boolean hasMissingFields = validateMissingFields(request);
-        appointment.setStatus(hasMissingFields ? "In Progress" : "Confirmed");
 
+        // Set status based on missing fields
+        String status = hasMissingFields ? "In Progress" : "Confirmed";
+        appointment.setStatus(status);
+
+        // Set remark if any field is missing
+        String remark = hasMissingFields ? getMissingFieldMessage(request) : null;
+
+        // If status is "Confirmed", do not include the remark
+        if ("Confirmed".equals(status)) {
+            remark = null;  // Remove remark for confirmed status
+        }
+
+        // Set the remark in the appointment
+        appointment.setRemark(remark);
+
+        // Save appointment
         appointmentRepository.save(appointment);
 
+        // Return response
         return mapToResponse(appointment);
     }
 
@@ -36,6 +52,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = getAppointmentById(appointmentId);
         appointment.setStatus("Cancelled");
 
+        // Save the cancelled status
         appointmentRepository.delete(appointment);
         return mapToResponse(appointment);
     }
@@ -50,9 +67,19 @@ public class AppointmentServiceImpl implements AppointmentService {
     public AppointmentCheckupResponse updateAppointment(String appointmentId, AppointmentCheckupRequest request) {
         Appointment appointment = getAppointmentById(appointmentId);
 
+        // Update the appointment fields from the request
         updateAppointmentFields(appointment, request);
-        appointment.setStatus("Confirmed");
 
+        // Check if all required fields are set
+        boolean hasMissingFields = validateMissingFields(request);
+        if (!hasMissingFields) {
+            // If no fields are missing, set the status to "Confirmed"
+            appointment.setStatus("Confirmed");
+            // Clear the remark as no fields are missing
+            appointment.setRemark(null);
+        }
+
+        // Save updated appointment
         appointmentRepository.save(appointment);
         return mapToResponse(appointment);
     }
@@ -84,6 +111,28 @@ public class AppointmentServiceImpl implements AppointmentService {
                 request.getPreferredTime() == null;
     }
 
+    // Helper method to generate the missing field message
+    private String getMissingFieldMessage(AppointmentCheckupRequest request) {
+        if (isNullOrEmpty(request.getPatientName())) {
+            return "Patient Name is missing";
+        } else if (request.getAge() <= 0) {
+            return "Age is missing";
+        } else if (isNullOrEmpty(request.getGender())) {
+            return "Gender is missing";
+        } else if (isNullOrEmpty(request.getMobile())) {
+            return "Mobile is missing";
+        } else if (isNullOrEmpty(request.getEmail())) {
+            return "Email is missing";
+        } else if (isNullOrEmpty(request.getCheckupType())) {
+            return "Checkup Type is missing";
+        } else if (request.getPreferredDate() == null) {
+            return "Appointment Date is missing";
+        } else if (request.getPreferredTime() == null) {
+            return "Appointment Time is missing";
+        }
+        return "Missing field(s)";
+    }
+
     // Helper method to map Appointment to AppointmentCheckupResponse
     private AppointmentCheckupResponse mapToResponse(Appointment appointment) {
         AppointmentCheckupResponse response = new AppointmentCheckupResponse();
@@ -93,6 +142,8 @@ public class AppointmentServiceImpl implements AppointmentService {
         response.setAppointmentDate(appointment.getAppointmentDate());
         response.setAppointmentTime(appointment.getAppointmentTime());
         response.setStatus(appointment.getStatus());
+        response.setRemark(appointment.getRemark()); // Set the remark here
+
         return response;
     }
 
