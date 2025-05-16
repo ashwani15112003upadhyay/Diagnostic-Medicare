@@ -10,8 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.Diagnostic.utility.ValidationUtil.isNullOrEmpty;
 
@@ -84,6 +86,14 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         appointmentRepository.save(appointment);
         return mapper.toResponse(appointment);
+    }
+
+    @Override
+    public List<AppointmentCheckupResponse> getAllAppointments() {
+        List<Appointment> appointments = appointmentRepository.findAll();
+        return appointments.stream()
+                .map(mapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     // Helper: Fetch appointment
