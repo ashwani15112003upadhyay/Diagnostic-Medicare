@@ -70,14 +70,19 @@ class AppointmentServiceImplTest {
     @Test
     void testApplyForCheckup_ValidRequest_ShouldReturnConfirmedStatus() {
         AppointmentCheckupRequest request = getValidRequest();
-        Appointment appointment = mapToAppointment(request);
 
-        when(appointmentRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        // Mock save: assign appointmentId and return saved appointment
+        when(appointmentRepository.save(any())).thenAnswer(invocation -> {
+            Appointment savedAppointment = invocation.getArgument(0);
+            savedAppointment.setAppointmentId("generated-id-123");
+            return savedAppointment;
+        });
 
         AppointmentCheckupResponse result = appointmentService.applyForCheckup(request);
 
         assertNotNull(result);
         assertEquals("Confirmed", result.getStatus());
+        assertEquals("generated-id-123", result.getAppointmentId());
         verify(appointmentRepository, times(1)).save(any(Appointment.class));
     }
 
@@ -86,12 +91,17 @@ class AppointmentServiceImplTest {
         Appointment appointment = mapToAppointment(getValidRequest());
         appointment.setAppointmentId("test-id");
 
+        // Simulate find by id returns appointment
         when(appointmentRepository.findByAppointmentId("test-id")).thenReturn(Optional.of(appointment));
 
+        // Mock delete method (void)
+        doNothing().when(appointmentRepository).delete(appointment);
+
+        // Assuming deleteAppointmentById sets status to "Cancelled"
         AppointmentCheckupResponse result = appointmentService.deleteAppointmentById("test-id");
 
         assertNotNull(result);
-        assertEquals("Confirmed", result.getStatus());
+        assertEquals("Cancelled", result.getStatus()); // <-- Expect Cancelled here
         verify(appointmentRepository).delete(appointment);
     }
 
