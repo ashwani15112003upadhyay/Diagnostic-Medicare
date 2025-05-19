@@ -85,7 +85,7 @@ public class AppointmentController {
 
     @PutMapping("/{appointmentId}")
     public ResponseEntity<CustomResponseModel<AppointmentCheckupResponse>> updateAppointment(
-            @PathVariable String appointmentId,
+            @Valid @PathVariable String appointmentId,
             @RequestBody AppointmentCheckupRequest request) {
         try {
             AppointmentCheckupResponse response = appointmentService.updateAppointment(appointmentId, request);
