@@ -3,6 +3,7 @@ package com.Diagnostic;
 import com.Diagnostic.dto.AppointmentCheckupRequest;
 import com.Diagnostic.dto.AppointmentCheckupResponse;
 import com.Diagnostic.entity.Appointment;
+import com.Diagnostic.exception.AppointmentNotFoundException;
 import com.Diagnostic.repository.AppointmentRepository;
 import com.Diagnostic.service.AppointmentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,7 +12,7 @@ import org.mockito.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -56,22 +57,10 @@ class AppointmentServiceImplTest {
         return appointment;
     }
 
-    private AppointmentCheckupResponse mapToResponse(Appointment appointment) {
-        AppointmentCheckupResponse response = new AppointmentCheckupResponse();
-        response.setAppointmentId(appointment.getAppointmentId());
-        response.setPatientName(appointment.getPatientName());
-        response.setCheckupType(appointment.getCheckupType());
-        response.setAppointmentDate(appointment.getAppointmentDate());
-        response.setAppointmentTime(appointment.getAppointmentTime());
-        response.setStatus(appointment.getStatus());
-        return response;
-    }
-
     @Test
     void testApplyForCheckup_ValidRequest_ShouldReturnConfirmedStatus() {
         AppointmentCheckupRequest request = getValidRequest();
 
-        // Mock save: assign appointmentId and return saved appointment
         when(appointmentRepository.save(any())).thenAnswer(invocation -> {
             Appointment savedAppointment = invocation.getArgument(0);
             savedAppointment.setAppointmentId("generated-id-123");
@@ -87,22 +76,47 @@ class AppointmentServiceImplTest {
     }
 
     @Test
+    void testApplyForCheckup_InvalidDate_ShouldReturnPendingStatus() {
+        AppointmentCheckupRequest request = getValidRequest();
+        request.setPreferredDate(LocalDate.now().plusDays(20)); // More than 15 days
+
+        when(appointmentRepository.save(any())).thenAnswer(invocation -> {
+            Appointment savedAppointment = invocation.getArgument(0);
+            savedAppointment.setAppointmentId("generated-id-456");
+            return savedAppointment;
+        });
+
+        AppointmentCheckupResponse result = appointmentService.applyForCheckup(request);
+
+        assertNotNull(result);
+        assertEquals("Pending", result.getStatus());
+        assertEquals("Choose date within 15 days", result.getRemark());
+    }
+
+    @Test
     void testDeleteAppointmentById_ShouldDeleteSuccessfully() {
         Appointment appointment = mapToAppointment(getValidRequest());
         appointment.setAppointmentId("test-id");
 
-        // Simulate find by id returns appointment
         when(appointmentRepository.findByAppointmentId("test-id")).thenReturn(Optional.of(appointment));
-
-        // Mock delete method (void)
         doNothing().when(appointmentRepository).delete(appointment);
 
-        // Assuming deleteAppointmentById sets status to "Cancelled"
         AppointmentCheckupResponse result = appointmentService.deleteAppointmentById("test-id");
 
         assertNotNull(result);
-        assertEquals("Cancelled", result.getStatus()); // <-- Expect Cancelled here
+        assertEquals("Cancelled", result.getStatus());
         verify(appointmentRepository).delete(appointment);
+    }
+
+    @Test
+    void testDeleteAppointmentById_NotFound_ShouldThrowException() {
+        when(appointmentRepository.findByAppointmentId("invalid-id")).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(AppointmentNotFoundException.class, () -> {
+            appointmentService.deleteAppointmentById("invalid-id");
+        });
+
+        assertEquals("Appointment not found with ID: invalid-id", exception.getMessage());
     }
 
     @Test
@@ -135,5 +149,23 @@ class AppointmentServiceImplTest {
         assertNotNull(result);
         assertEquals("Confirmed", result.getStatus());
         assertEquals("Updated Name", result.getPatientName());
+    }
+
+    @Test
+    void testGetAllAppointments_ShouldReturnList() {
+        Appointment appointment1 = mapToAppointment(getValidRequest());
+        appointment1.setAppointmentId("id1");
+
+        Appointment appointment2 = mapToAppointment(getValidRequest());
+        appointment2.setAppointmentId("id2");
+
+        when(appointmentRepository.findAll()).thenReturn(Arrays.asList(appointment1, appointment2));
+
+        List<AppointmentCheckupResponse> result = appointmentService.getAllAppointments();
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("id1", result.get(0).getAppointmentId());
+        assertEquals("id2", result.get(1).getAppointmentId());
     }
 }
