@@ -67,7 +67,7 @@ class AppointmentServiceImplTest {
             return savedAppointment;
         });
 
-        AppointmentCheckupResponse result = appointmentService.applyForCheckup(request);
+        AppointmentCheckupResponse result = appointmentService.bookAppointment(request);
 
         assertNotNull(result);
         assertEquals("Confirmed", result.getStatus());
@@ -86,7 +86,7 @@ class AppointmentServiceImplTest {
             return savedAppointment;
         });
 
-        AppointmentCheckupResponse result = appointmentService.applyForCheckup(request);
+        AppointmentCheckupResponse result = appointmentService.bookAppointment(request);
 
         assertNotNull(result);
         assertEquals("Pending", result.getStatus());
@@ -101,7 +101,7 @@ class AppointmentServiceImplTest {
         when(appointmentRepository.findByAppointmentId("test-id")).thenReturn(Optional.of(appointment));
         doNothing().when(appointmentRepository).delete(appointment);
 
-        AppointmentCheckupResponse result = appointmentService.deleteAppointmentById("test-id");
+        AppointmentCheckupResponse result = appointmentService.cancelAppointmentById("test-id");
 
         assertNotNull(result);
         assertEquals("Cancelled", result.getStatus());
@@ -113,7 +113,7 @@ class AppointmentServiceImplTest {
         when(appointmentRepository.findByAppointmentId("invalid-id")).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(AppointmentNotFoundException.class, () -> {
-            appointmentService.deleteAppointmentById("invalid-id");
+            appointmentService.cancelAppointmentById("invalid-id");
         });
 
         assertEquals("Appointment not found with ID: invalid-id", exception.getMessage());
@@ -126,7 +126,7 @@ class AppointmentServiceImplTest {
 
         when(appointmentRepository.findByAppointmentId("test-id")).thenReturn(Optional.of(appointment));
 
-        AppointmentCheckupResponse result = appointmentService.getAppointmentDetailsById("test-id");
+        AppointmentCheckupResponse result = appointmentService.getAppointmentById("test-id");
 
         assertNotNull(result);
         assertEquals("test-id", result.getAppointmentId());

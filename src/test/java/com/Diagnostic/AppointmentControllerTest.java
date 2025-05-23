@@ -4,8 +4,7 @@ import com.Diagnostic.controller.AppointmentController;
 import com.Diagnostic.dto.AppointmentCheckupRequest;
 import com.Diagnostic.dto.AppointmentCheckupResponse;
 import com.Diagnostic.service.AppointmentService;
-import com.Diagnostic.Response.CustomResponseModel;
-import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -52,7 +51,7 @@ class AppointmentControllerTest {
         response.setAppointmentId("abc123");
         response.setPatientName("Alice");
 
-        when(appointmentService.applyForCheckup(any())).thenReturn(response);
+        when(appointmentService.bookAppointment(any())).thenReturn(response);
 
         String body = "{"
                 + "\"patientName\":\"Alice\","
@@ -79,7 +78,7 @@ class AppointmentControllerTest {
         AppointmentCheckupResponse response = new AppointmentCheckupResponse();
         response.setAppointmentId("test-id");
 
-        when(appointmentService.deleteAppointmentById("test-id")).thenReturn(response);
+        when(appointmentService.cancelAppointmentById("test-id")).thenReturn(response);
 
         mockMvc.perform(delete("/appointment/test-id"))
                 .andExpect(status().isOk())
@@ -93,7 +92,7 @@ class AppointmentControllerTest {
         AppointmentCheckupResponse response = new AppointmentCheckupResponse();
         response.setAppointmentId("test-id");
 
-        when(appointmentService.getAppointmentDetailsById("test-id")).thenReturn(response);
+        when(appointmentService.getAppointmentById("test-id")).thenReturn(response);
 
         mockMvc.perform(get("/appointment/test-id"))
                 .andExpect(status().isOk())

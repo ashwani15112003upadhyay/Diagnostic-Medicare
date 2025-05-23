@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-
 @Service
 public class AppointmentServiceImpl implements AppointmentService {
 
@@ -25,8 +24,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     private AppointmentRepository appointmentRepository;
 
     @Override
-    public AppointmentCheckupResponse applyForCheckup(AppointmentCheckupRequest request) {
-        logger.info("Applying for checkup for patient: {}", request.getPatientName());
+    public AppointmentCheckupResponse bookAppointment(AppointmentCheckupRequest request) {
+        logger.info("Booking appointment for patient: {}", request.getPatientName());
 
         Appointment appointment = new Appointment();
         appointment.setAppointmentId(UUID.randomUUID().toString());
@@ -39,7 +38,6 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setAppointmentDate(request.getPreferredDate());
         appointment.setAppointmentTime(request.getPreferredTime());
 
-        // 15-day logic
         if (request.getPreferredDate().isAfter(LocalDate.now().plusDays(15))) {
             appointment.setStatus("Pending");
             appointment.setRemark("Choose date within 15 days");
@@ -55,9 +53,9 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public AppointmentCheckupResponse deleteAppointmentById(String appointmentId) {
-        logger.info("Deleting appointment with ID: {}", appointmentId);
-        Appointment appointment = getAppointmentById(appointmentId);
+    public AppointmentCheckupResponse cancelAppointmentById(String appointmentId) {
+        logger.info("Cancelling appointment with ID: {}", appointmentId);
+        Appointment appointment = getAppointmentByIdInternal(appointmentId);
         appointment.setStatus("Cancelled");
         appointmentRepository.delete(appointment);
         logger.info("Appointment cancelled and deleted: {}", appointmentId);
@@ -65,16 +63,16 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public AppointmentCheckupResponse getAppointmentDetailsById(String appointmentId) {
+    public AppointmentCheckupResponse getAppointmentById(String appointmentId) {
         logger.info("Fetching appointment details for ID: {}", appointmentId);
-        Appointment appointment = getAppointmentById(appointmentId);
+        Appointment appointment = getAppointmentByIdInternal(appointmentId);
         return toResponse(appointment);
     }
 
     @Override
     public AppointmentCheckupResponse updateAppointment(String appointmentId, AppointmentCheckupRequest request) {
         logger.info("Updating appointment with ID: {}", appointmentId);
-        Appointment appointment = getAppointmentById(appointmentId);
+        Appointment appointment = getAppointmentByIdInternal(appointmentId);
 
         appointment.setPatientName(request.getPatientName());
         appointment.setAge(request.getAge());
@@ -84,7 +82,6 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setCheckupType(request.getCheckupType());
         appointment.setAppointmentDate(request.getPreferredDate());
         appointment.setAppointmentTime(request.getPreferredTime());
-
 
         if (request.getPreferredDate().isAfter(LocalDate.now().plusDays(15))) {
             appointment.setStatus("Pending");
@@ -121,7 +118,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         return response;
     }
 
-    private Appointment getAppointmentById(String appointmentId) {
+    private Appointment getAppointmentByIdInternal(String appointmentId) {
         logger.debug("Looking up appointment by ID: {}", appointmentId);
         return appointmentRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() ->

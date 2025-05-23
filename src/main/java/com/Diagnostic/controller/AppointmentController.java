@@ -23,7 +23,7 @@ public class AppointmentController {
     public ResponseEntity<CustomResponseModel<AppointmentCheckupResponse>> apply(
             @Valid @RequestBody AppointmentCheckupRequest request) {
         try {
-            AppointmentCheckupResponse response = appointmentService.applyForCheckup(request);
+            AppointmentCheckupResponse response = appointmentService.bookAppointment(request);
             CustomResponseModel<AppointmentCheckupResponse> customResponse = new CustomResponseModel<>(
                     true,
                     "Appointment booked successfully",
@@ -43,7 +43,7 @@ public class AppointmentController {
     @DeleteMapping("/{appointmentId}")
     public ResponseEntity<CustomResponseModel<AppointmentCheckupResponse>> deleteAppointment(@PathVariable String appointmentId) {
         try {
-            AppointmentCheckupResponse response = appointmentService.deleteAppointmentById(appointmentId);
+            AppointmentCheckupResponse response = appointmentService.cancelAppointmentById(appointmentId);
             return ResponseEntity.ok(new CustomResponseModel<>(true, "Appointment deleted successfully", response));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -54,7 +54,7 @@ public class AppointmentController {
     @GetMapping("/{appointmentId}")
     public ResponseEntity<CustomResponseModel<AppointmentCheckupResponse>> getAppointmentDetails(@PathVariable String appointmentId) {
         try {
-            AppointmentCheckupResponse response = appointmentService.getAppointmentDetailsById(appointmentId);
+            AppointmentCheckupResponse response = appointmentService.getAppointmentById(appointmentId);
 
             return ResponseEntity.ok(new CustomResponseModel<>(true, "Appointment found successfully", response));
         } catch (RuntimeException e) {
